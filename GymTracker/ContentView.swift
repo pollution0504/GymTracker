@@ -2,60 +2,71 @@
 //  ContentView.swift
 //  GymTracker
 //
-//  Created by Noah Poulatian on 8/10/26.
-//
 
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var routines: [Routine]
+    @State private var showingPresetPicker = false
 
     var body: some View {
-        NavigationSplitView {
+        NavigationStack {
             List {
-                ForEach(items) { item in
+                ForEach(routines) { routine in
                     NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
+                        RoutineDetailView(routine: routine)
                     } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                        VStack(alignment: .leading) {
+                            Text(routine.name)
+                                .font(.headline)
+                            Text("\(routine.days.count) day(s)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-                .onDelete(perform: deleteItems)
+                .onDelete(perform: deleteRoutines)
             }
+            .navigationTitle("Routines")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                 }
                 ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    Menu {
+                        Button(action: addRoutine) {
+                            Label("Blank Routine", systemImage: "doc")
+                        }
+                        Button {
+                            showingPresetPicker = true
+                        } label: {
+                            Label("Choose a Preset", systemImage: "square.stack.3d.up")
+                        }
+                    } label: {
+                        Label("Add Routine", systemImage: "plus")
                     }
                 }
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            .sheet(isPresented: $showingPresetPicker) {
+                PresetPickerView()
             }
         }
     }
-}
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+    private func addRoutine() {
+        withAnimation {
+            let newRoutine = Routine(name: "New Routine", type: .custom)
+            modelContext.insert(newRoutine)
+        }
+    }
+
+    private func deleteRoutines(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(routines[index])
+            }
+        }
+    }
 }
